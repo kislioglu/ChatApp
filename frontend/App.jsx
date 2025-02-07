@@ -1,12 +1,12 @@
 import React from 'react';
 import {SafeAreaView, View} from 'react-native';
-import ChatScreen from './src/screens/ChatScreen';
+import Navigation from './src/navigations/Navigations';
 
 function App() {
   return (
     <SafeAreaView>
       <View style={{height: '100%'}}>
-        <ChatScreen />
+        <Navigation />
       </View>
     </SafeAreaView>
   );
