@@ -7,28 +7,39 @@ import {
   FlatList,
   StyleSheet,
 } from 'react-native';
-import socket from '../services/socket';
+import {connectSocket, disconnectSocket} from '../services/socket';
 
 const ChatScreen = () => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const userId = socket.id;
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
-    socket.on('receiveMessage', data => {
-      setMessages(prevMessages => {
-        const isDuplicate = prevMessages.some(msg => msg.id === data.id);
-        return isDuplicate ? prevMessages : [...prevMessages, data];
-      });
-    });
+    const socket = connectSocket();
 
-    return () => {
-      socket.off('receiveMessage');
-    };
+    if (socket) {
+      socket.on('connect', () => {
+        setUserId(socket.id);
+      });
+
+      socket.on('receiveMessage', data => {
+        setMessages(prevMessages => {
+          const isDuplicate = prevMessages.some(msg => msg.id === data.id);
+          return isDuplicate ? prevMessages : [...prevMessages, data];
+        });
+      });
+
+      return () => {
+        socket.off('connect');
+        socket.off('receiveMessage');
+        disconnectSocket();
+      };
+    }
   }, []);
 
   const sendMessage = () => {
-    if (!message.trim()) return;
+    const socket = connectSocket();
+    if (!message.trim() || !socket) return;
 
     const messageData = {
       id: `${socket.id}-${Date.now()}`,
@@ -42,7 +53,6 @@ const ChatScreen = () => {
 
   const renderItem = ({item}) => {
     const isMine = item.user === userId;
-    console.log(item)
     return (
       <View
         style={[styles.messageContainer, isMine ? styles.right : styles.left]}>
