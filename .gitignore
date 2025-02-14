@@ -80,3 +80,6 @@ frontend/android/app/google-services.json
 
 # Environment variables
 .env
+
+# Firebase Admin SDK
+chatapp-28550-firebase-adminsdk-fbsvc-4506aa1abc.json
