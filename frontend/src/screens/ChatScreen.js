@@ -7,19 +7,24 @@ import {
   FlatList,
   StyleSheet,
 } from 'react-native';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import {connectSocket, disconnectSocket} from '../services/socket';
 
 const ChatScreen = () => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [userId, setUserId] = useState(null);
+  const [recipientUid, setRecipientUid] = useState('');
 
   useEffect(() => {
     const socket = connectSocket();
+    const user = auth().currentUser;
 
-    if (socket) {
+    if (socket && user) {
       socket.on('connect', () => {
         setUserId(socket.id);
+        socket.emit('register', user.uid);
       });
 
       socket.on('receiveMessage', data => {
@@ -35,24 +40,47 @@ const ChatScreen = () => {
         disconnectSocket();
       };
     }
+
+    // get messages from firebase
+    const unsubscribe = firestore()
+      .collection('messages')
+      .orderBy('timestamp', 'asc')
+      .onSnapshot(querySnapshot => {
+        const loadedMessages = [];
+        querySnapshot.forEach(doc => {
+          loadedMessages.push(doc.data());
+        });
+        setMessages(loadedMessages);
+      });
+
+    return () => unsubscribe();
   }, []);
 
   const sendMessage = () => {
     const socket = connectSocket();
-    if (!message.trim() || !socket) return;
+    if (
+      !message.trim() ||
+      !socket ||
+      !recipientUid.trim() ||
+      recipientUid === auth().currentUser.uid
+    )
+      return;
 
     const messageData = {
-      id: `${socket.id}-${Date.now()}`,
-      user: socket.id,
+      user: auth().currentUser.uid,
+      recipientUid, 
       text: message,
+      timestamp: firestore.FieldValue.serverTimestamp(),
     };
+
+    setMessages(prevMessages => [...prevMessages, messageData]);
 
     socket.emit('sendMessage', messageData);
     setMessage('');
   };
 
   const renderItem = ({item}) => {
-    const isMine = item.user === userId;
+    const isMine = item.user === auth().currentUser.uid;
     return (
       <View
         style={[styles.messageContainer, isMine ? styles.right : styles.left]}>
@@ -67,6 +95,13 @@ const ChatScreen = () => {
         data={messages}
         keyExtractor={item => item.id}
         renderItem={renderItem}
+      />
+
+      <TextInput
+        value={recipientUid}
+        onChangeText={setRecipientUid}
+        placeholder="Recipient UID"
+        style={styles.input}
       />
 
       <TextInput
