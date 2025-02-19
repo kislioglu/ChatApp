@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import {useEffect} from 'react';
 import {
   View,
@@ -40,26 +41,46 @@ export default function AuthScreen() {
   }, []);
 
   const signUp = async () => {
+    if (!email || !password) {
+      console.error('Email and password fields cannot be empty');
+      return;
+    }
+
     try {
       const userCredential = await auth().createUserWithEmailAndPassword(
         email,
         password,
       );
       setUser(userCredential.user);
+
+      await firestore().collection('users').doc(userCredential.user.uid).set({
+        uid: userCredential.user.uid,
+        email: userCredential.user.email,
+      });
     } catch (error) {
-      console.log(error.message);
+      console.error(error);
     }
   };
 
   const signIn = async () => {
+    if (!email || !password) {
+      console.error('Email and password fields cannot be empty');
+      return;
+    }
+
     try {
       const userCredential = await auth().signInWithEmailAndPassword(
         email,
         password,
       );
       setUser(userCredential.user);
+
+      await firestore().collection('users').doc(userCredential.user.uid).set({
+        uid: userCredential.user.uid,
+        email: userCredential.user.email,
+      });
     } catch (error) {
-      console.log(error.message);
+      console.error(error);
     }
   };
 
