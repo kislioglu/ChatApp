@@ -1,9 +1,38 @@
-import {View, Text, Pressable} from 'react-native';
-import React from 'react';
-import {useNavigation} from '@react-navigation/native';
+import {
+  View,
+  Text,
+  Pressable,
+  Modal,
+  FlatList,
+  TouchableOpacity,
+} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import firestore from '@react-native-firebase/firestore';
 
-export default function NewUserBtn() {
-  const navigate = useNavigation();
+export default function NewUserBtn({onUserSelect}) {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [users, setUsers] = useState([]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const usersCollection = await firestore().collection('users').get();
+        const usersList = usersCollection.docs.map(doc => doc.data());
+        setUsers(usersList);
+        console.log('Fetched users:', usersList);
+      } catch (error) {
+        console.error('Error fetching users:', error); 
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  const handleUserSelect = (user) => {
+    onUserSelect(user.uid);
+    setModalVisible(false);
+  };
+
   return (
     <View>
       <Pressable
@@ -16,9 +45,32 @@ export default function NewUserBtn() {
           alignItems: 'center',
           borderRadius: 15,
         }}
-        onPress={() => navigate.navigate('ChatScreen')}>
+        onPress={() => setModalVisible(true)}>
         <Text style={{color: 'white', fontWeight: 'bold'}}>New</Text>
       </Pressable>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}>
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <View style={{width: '80%', backgroundColor: 'white', borderRadius: 10, padding: 20}}>
+            <FlatList
+              data={users}
+              keyExtractor={item => item.uid}
+              renderItem={({item}) => (
+                <TouchableOpacity onPress={() => handleUserSelect(item)}>
+                  <Text style={{padding: 10, fontSize: 18}}>{item.email}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <Pressable onPress={() => setModalVisible(false)}>
+              <Text style={{color: 'red', textAlign: 'center', marginTop: 10}}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
