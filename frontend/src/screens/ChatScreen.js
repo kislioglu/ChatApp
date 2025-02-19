@@ -3,19 +3,20 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   FlatList,
   StyleSheet,
+  Pressable,
+  Image,
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import {connectSocket, disconnectSocket} from '../services/socket';
+import uuid from 'react-native-uuid';
 
-const ChatScreen = () => {
+const ChatScreen = ({recipientUid}) => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [userId, setUserId] = useState(null);
-  const [recipientUid, setRecipientUid] = useState('');
 
   useEffect(() => {
     const socket = connectSocket();
@@ -67,8 +68,9 @@ const ChatScreen = () => {
       return;
 
     const messageData = {
+      id: uuid.v4(),
       user: auth().currentUser.uid,
-      recipientUid, 
+      recipientUid,
       text: message,
       timestamp: firestore.FieldValue.serverTimestamp(),
     };
@@ -83,7 +85,8 @@ const ChatScreen = () => {
     const isMine = item.user === auth().currentUser.uid;
     return (
       <View
-        style={[styles.messageContainer, isMine ? styles.right : styles.left]}>
+        style={[styles.messageContainer, isMine ? styles.right : styles.left]}
+        key={item.id}>
         <Text style={styles.messageText}>{item.text}</Text>
       </View>
     );
@@ -97,22 +100,37 @@ const ChatScreen = () => {
         renderItem={renderItem}
       />
 
-      <TextInput
-        value={recipientUid}
-        onChangeText={setRecipientUid}
-        placeholder="Recipient UID"
-        style={styles.input}
-      />
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 10,
+        }}>
+        <TextInput
+          value={message}
+          onChangeText={setMessage}
+          placeholder="Type your message"
+          style={styles.input}
+          multiline={true}
+        />
 
-      <TextInput
-        value={message}
-        onChangeText={setMessage}
-        placeholder="Type a message..."
-        style={styles.input}
-        multiline={true}
-      />
-
-      <Button title="Send" onPress={sendMessage} />
+        <Pressable
+          style={{
+            width: 40,
+            height: 40,
+            backgroundColor: '#0084ff',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: 16,
+          }}
+          onPress={sendMessage}>
+          <Image
+            source={require('../../assets/send.png')}
+            style={{width: 20, height: 20}}
+          />
+        </Pressable>
+      </View>
     </View>
   );
 };
@@ -138,9 +156,9 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     padding: 10,
-    marginBottom: 10,
-    width: '100%',
+    width: '80%',
     maxHeight: 150,
+    borderRadius: 10,
   },
 });
 
