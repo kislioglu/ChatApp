@@ -5,7 +5,6 @@ import {useEffect} from 'react';
 import {
   View,
   TextInput,
-  Button,
   Text,
   Pressable,
   StyleSheet,
@@ -29,7 +28,7 @@ export default function AuthScreen() {
 
       if (user) {
         connectSocket();
-        navigation.navigate('ChatScreen');
+        navigation.navigate('Index');
         console.log('connected');
       } else {
         disconnectSocket();
