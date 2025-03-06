@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import React, {useState, useEffect} from 'react';
 import firestore from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
 
 export default function NewUserBtn({onUserSelect}) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -19,7 +20,6 @@ export default function NewUserBtn({onUserSelect}) {
         const usersCollection = await firestore().collection('users').get();
         const usersList = usersCollection.docs.map(doc => doc.data());
         setUsers(usersList);
-        console.log('Fetched users:', usersList);
       } catch (error) {
         console.error('Error fetching users:', error); 
       }
@@ -31,6 +31,15 @@ export default function NewUserBtn({onUserSelect}) {
   const handleUserSelect = (user) => {
     onUserSelect(user.uid);
     setModalVisible(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await auth().signOut();
+      console.log('User signed out!');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   return (
@@ -71,6 +80,21 @@ export default function NewUserBtn({onUserSelect}) {
           </View>
         </View>
       </Modal>
+
+      <Pressable
+        style={{
+          backgroundColor: '#d32f2f',
+          padding: 10,
+          width: 60,
+          height: 60,
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderRadius: 15,
+          marginTop: 10,
+        }}
+        onPress={handleLogout}>
+        <Text style={{color: 'white', fontWeight: 'bold'}}>Logout</Text>
+      </Pressable>
     </View>
   );
 }
